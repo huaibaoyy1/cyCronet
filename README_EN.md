@@ -4,7 +4,7 @@ English | [简体中文](README.md)
 
 ## 🎯 Core Features
 
-Cycronet is a Python HTTP client based on Chromium's Cronet network stack. **Its key feature is generating authentic Chrome browser TLS/HTTP2 fingerprints**, effectively bypassing various anti-bot and fingerprint detection systems.
+The ultimate solution for browser request protocol fingerprint detection - this library has zero detection points, supports high concurrency, and offers a syntax similar to requests for ease of use. Cycronet is a Python HTTP client based on Chromium's Cronet network stack. **Its key feature is generating authentic Chrome browser TLS/HTTP2 fingerprints**, effectively bypassing various anti-bot and fingerprint detection systems.
 
 **✨ New Features:**
 
