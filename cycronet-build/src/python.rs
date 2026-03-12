@@ -103,7 +103,7 @@ impl PyCronetClient {
                 let timeout_duration = Duration::from_millis(timeout_ms);
 
                 // Release GIL while waiting for response to allow concurrent requests
-                let response_result = py.allow_threads(|| {
+                let response_result = py.allow_threads(move || {
                     // Use a thread to implement timeout
                     let (timeout_tx, timeout_rx) = std::sync::mpsc::channel();
                     std::thread::spawn(move || {

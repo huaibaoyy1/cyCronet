@@ -180,8 +180,14 @@ rustup target add aarch64-apple-darwin
 maturin build --release --target aarch64-apple-darwin --zig
 
 # 6. 生成的 wheel 位于
-# target\wheels\cycronet-144.0.x-cp38-abi3-macosx_11_0_arm64.whl
+# target\wheels\cycronet-144.1.x-cp38-abi3-macosx_11_0_arm64.whl (支持 Python 3.8-3.13)
+# target\wheels\cycronet-144.1.x-cp313-cp313t-macosx_11_0_arm64.whl (Python 3.13 专用)
 ```
+
+**注意**：
+- 构建过程中会出现 Python 3.14 的错误，这是正常的（PyO3 0.23 不支持 Python 3.14）
+- 只要看到 "Built wheel for abi3" 和 "Built wheel for CPython 3.13t" 就说明构建成功
+- 使用 PyO3 0.23.5 以支持 Python 3.13（解决 `_PyUnicode_Ready` 符号问题）
 
 **验证**：
 ```powershell
