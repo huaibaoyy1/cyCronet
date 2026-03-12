@@ -173,6 +173,8 @@ class AsyncSession:
         # Avoid pyo3-asyncio compatibility issues
         import asyncio
         loop = asyncio.get_event_loop()
+
+        # Always disable redirects at Rust layer, handle in Python
         response_dict = await loop.run_in_executor(
             None,
             lambda: self._client._client.request(
@@ -181,7 +183,7 @@ class AsyncSession:
                 method.upper(),
                 prepared_headers,
                 body,
-                allow_redirects
+                False  # Always False - handle redirects in Python
             )
         )
 
@@ -203,7 +205,43 @@ class AsyncSession:
                     store_domain = cookie_domain if cookie_domain else domain
                     response_cookies.set(cookie_name, cookie_value, store_domain)
 
+        # Update session cookies from response
         self._update_cookies_from_response(resp_headers, domain)
+
+        # Handle redirects in Python layer
+        if allow_redirects and status_code in (301, 302, 303, 307, 308):
+            location = None
+            for header_name, values in resp_headers.items():
+                if header_name.lower() == 'location':
+                    location = values[0] if values else None
+                    break
+
+            if location:
+                # Handle relative URLs
+                if not location.startswith(('http://', 'https://')):
+                    from urllib.parse import urljoin
+                    location = urljoin(url, location)
+
+                # Follow redirect with updated cookies and headers
+                # For 303, change method to GET
+                redirect_method = 'GET' if status_code == 303 else method
+
+                # Recursively call request with updated URL
+                # Note: cookies=None means "use session cookies only" (which includes Set-Cookie from redirect response)
+                # User-provided cookies were already added to self._cookies at line 125
+                # Server Set-Cookie was added to self._cookies at line 209
+                return await self.request(
+                    redirect_method,
+                    location,
+                    params=None,  # Don't carry params on redirect
+                    headers=headers_to_prepare,  # Carry original headers
+                    cookies=None,  # Use session cookies (includes both user cookies and Set-Cookie from response)
+                    data=None if status_code == 303 else data,  # Drop body for 303
+                    json=None,
+                    timeout=timeout,
+                    verify=verify,
+                    allow_redirects=True  # Continue following redirects
+                )
 
         return Response(
             status_code=status_code,

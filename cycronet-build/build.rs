@@ -8,10 +8,13 @@ fn main() {
     let root = PathBuf::from(&dir).join("cronet-bin");
 
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
     let (include_dir, lib_dir) = if target_os == "linux" {
         (root.join("linux").join("include"), root.join("linux"))
     } else if target_os == "macos" {
         (root.join("mac").join("include"), root.join("mac"))
+    } else if target_os == "windows" && target_arch == "x86" {
+        (root.join("win32").join("include"), root.join("win32"))
     } else {
         (root.join("include"), root)
     };

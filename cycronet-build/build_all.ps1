@@ -1,6 +1,6 @@
 # 编译所有平台的 wheel
 param(
-    [ValidateSet("windows", "linux", "macos", "all")]
+    [ValidateSet("windows", "windows32", "linux", "macos", "all")]
     [string]$Platform = "all"
 )
 
@@ -15,16 +15,45 @@ function Build-Windows {
     Remove-Item python\cycronet\*.so -ErrorAction SilentlyContinue
     Remove-Item python\cycronet\*.dylib -ErrorAction SilentlyContinue
 
-    Write-Host "复制 Windows DLL..." -ForegroundColor Yellow
+    Write-Host "复制 Windows x64 DLL..." -ForegroundColor Yellow
     Copy-Item cronet-libs\windows\cronet.144.0.7506.0.dll python\cycronet\ -Force
 
     Write-Host "开始构建..." -ForegroundColor Green
     maturin build --release
 
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "✓ Windows wheel 构建成功" -ForegroundColor Green
+        Write-Host "✓ Windows x64 wheel 构建成功" -ForegroundColor Green
     } else {
-        Write-Host "✗ Windows wheel 构建失败" -ForegroundColor Red
+        Write-Host "✗ Windows x64 wheel 构建失败" -ForegroundColor Red
+        exit 1
+    }
+}
+
+function Build-Windows32 {
+    Write-Host "`n=== 编译 Windows x86 (32-bit) Wheel ===" -ForegroundColor Cyan
+    cd $ProjectDir
+
+    Write-Host "清理其他平台的库文件..." -ForegroundColor Yellow
+    Remove-Item python\cycronet\*.so -ErrorAction SilentlyContinue
+    Remove-Item python\cycronet\*.dylib -ErrorAction SilentlyContinue
+
+    Write-Host "复制 Windows x86 DLL..." -ForegroundColor Yellow
+    Copy-Item cronet-libs\windows32\cronet.144.0.7506.0.dll python\cycronet\ -Force
+
+    Write-Host "检查 Rust 目标..." -ForegroundColor Yellow
+    $targets = rustup target list --installed
+    if ($targets -notcontains "i686-pc-windows-msvc") {
+        Write-Host "安装 i686-pc-windows-msvc 目标..." -ForegroundColor Yellow
+        rustup target add i686-pc-windows-msvc
+    }
+
+    Write-Host "开始构建..." -ForegroundColor Green
+    maturin build --release --target i686-pc-windows-msvc
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "✓ Windows x86 wheel 构建成功" -ForegroundColor Green
+    } else {
+        Write-Host "✗ Windows x86 wheel 构建失败" -ForegroundColor Red
         exit 1
     }
 }
@@ -100,10 +129,12 @@ Write-Host "项目目录: $ProjectDir" -ForegroundColor White
 
 switch ($Platform) {
     "windows" { Build-Windows }
+    "windows32" { Build-Windows32 }
     "linux" { Build-Linux }
     "macos" { Build-MacOS }
     "all" {
         Build-Windows
+        Build-Windows32
         Build-Linux
         Build-MacOS
     }

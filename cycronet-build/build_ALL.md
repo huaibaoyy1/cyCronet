@@ -41,7 +41,7 @@ cd cycronet-build
 Remove-Item python\cycronet\*.so -ErrorAction SilentlyContinue
 Remove-Item python\cycronet\*.dylib -ErrorAction SilentlyContinue
 
-# 3. 复制 Windows DLL
+# 3. 复制 Windows x64 DLL
 Copy-Item cronet-libs\windows\cronet.144.0.7506.0.dll python\cycronet\ -Force
 
 # 4. 构建 wheel
@@ -60,6 +60,41 @@ python -m zipfile -l target\wheels\cycronet-*-win_amd64.whl | Select-String "cyc
 # - cycronet/__init__.py
 # - cycronet/cronet_cloak.pyd
 # - cycronet/cronet.144.0.7506.0.dll
+# - cycronet/tls_profiles.json
+```
+
+### 📦 编译 Windows x86 (32-bit) Wheel
+
+```powershell
+# 1. 进入项目目录
+cd cycronet-build
+
+# 2. 清理其他平台的库文件
+Remove-Item python\cycronet\*.so -ErrorAction SilentlyContinue
+Remove-Item python\cycronet\*.dylib -ErrorAction SilentlyContinue
+
+# 3. 复制 Windows x86 DLL
+Copy-Item cronet-libs\windows32\cronet.144.0.7506.0.dll python\cycronet\ -Force
+
+# 4. 添加 32 位编译目标（首次需要）
+rustup target add i686-pc-windows-msvc
+
+# 5. 构建 wheel
+maturin build --release --target i686-pc-windows-msvc
+
+# 6. 生成的 wheel 位于
+# target\wheels\cycronet-144.0.x-cp38-abi3-win32.whl
+```
+
+**验证**：
+```powershell
+# 查看 wheel 内容
+python -m zipfile -l target\wheels\cycronet-*-win32.whl | Select-String "cycronet/"
+
+# 应该包含：
+# - cycronet/__init__.py
+# - cycronet/cronet_cloak.pyd
+# - cycronet/cronet.144.0.7506.0.dll (32-bit version)
 # - cycronet/tls_profiles.json
 ```
 
@@ -183,6 +218,23 @@ function Build-Windows {
     maturin build --release
 }
 
+function Build-Windows32 {
+    Write-Host "=== 编译 Windows x86 (32-bit) Wheel ===" -ForegroundColor Cyan
+    cd $ProjectDir
+    Remove-Item python\cycronet\*.so -ErrorAction SilentlyContinue
+    Remove-Item python\cycronet\*.dylib -ErrorAction SilentlyContinue
+    Copy-Item cronet-libs\windows32\cronet.144.0.7506.0.dll python\cycronet\ -Force
+
+    # 检查并安装 32 位目标
+    $targets = rustup target list --installed
+    if ($targets -notcontains "i686-pc-windows-msvc") {
+        Write-Host "安装 i686-pc-windows-msvc 目标..." -ForegroundColor Yellow
+        rustup target add i686-pc-windows-msvc
+    }
+
+    maturin build --release --target i686-pc-windows-msvc
+}
+
 function Build-Linux {
     Write-Host "=== 编译 Linux x86_64 Wheel (manylinux_2_24) ===" -ForegroundColor Cyan
     cd $ProjectDir
@@ -213,10 +265,12 @@ function Build-MacOS {
 
 switch ($Platform) {
     "windows" { Build-Windows }
+    "windows32" { Build-Windows32 }
     "linux" { Build-Linux }
     "macos" { Build-MacOS }
     "all" {
         Build-Windows
+        Build-Windows32
         Build-Linux
         Build-MacOS
     }
@@ -237,8 +291,11 @@ Get-ChildItem "$ProjectDir\target\wheels\*.whl" |
 # 编译所有平台
 .\build_all.ps1 -Platform all
 
-# 只编译 Windows
+# 只编译 Windows x64
 .\build_all.ps1 -Platform windows
+
+# 只编译 Windows x86 (32-bit)
+.\build_all.ps1 -Platform windows32
 
 # 只编译 Linux
 .\build_all.ps1 -Platform linux
@@ -249,9 +306,16 @@ Get-ChildItem "$ProjectDir\target\wheels\*.whl" |
 
 ### 🧪 测试编译的 Wheel
 
-**Windows**:
+**Windows x64**:
 ```powershell
 pip install target\wheels\cycronet-*-win_amd64.whl
+python -c "import cycronet; print(cycronet.get('https://httpbin.org/get').status_code)"
+```
+
+**Windows x86 (32-bit)**:
+```powershell
+# 需要在 32 位 Python 环境中测试
+pip install target\wheels\cycronet-*-win32.whl
 python -c "import cycronet; print(cycronet.get('https://httpbin.org/get').status_code)"
 ```
 
