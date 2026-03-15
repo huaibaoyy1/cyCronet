@@ -8,35 +8,35 @@ use cronet_cloak::cronet_pb::{Header, TargetRequest};
 
 #[napi(object)]
 pub struct CreateSessionOptions {
-  #[napi(rename = "proxyRules")]
+  #[napi(js_name = "proxyRules")]
   pub proxy_rules: Option<String>,
-  #[napi(rename = "skipCertVerify")]
+  #[napi(js_name = "skipCertVerify")]
   pub skip_cert_verify: Option<bool>,
-  #[napi(rename = "timeoutMs")]
+  #[napi(js_name = "timeoutMs")]
   pub timeout_ms: Option<u64>,
-  #[napi(rename = "cipherSuites")]
+  #[napi(js_name = "cipherSuites")]
   pub cipher_suites: Option<Vec<String>>,
-  #[napi(rename = "tlsCurves")]
+  #[napi(js_name = "tlsCurves")]
   pub tls_curves: Option<Vec<String>>,
-  #[napi(rename = "tlsExtensions")]
+  #[napi(js_name = "tlsExtensions")]
   pub tls_extensions: Option<Vec<String>>,
 }
 
 #[napi(object)]
 pub struct RequestOptions {
-  #[napi(rename = "sessionId")]
+  #[napi(js_name = "sessionId")]
   pub session_id: String,
   pub url: String,
   pub method: String,
   pub headers: Option<Vec<(String, String)>>,
   pub body: Option<Buffer>,
-  #[napi(rename = "allowRedirects")]
+  #[napi(js_name = "allowRedirects")]
   pub allow_redirects: Option<bool>,
 }
 
 #[napi(object)]
 pub struct ResponseObject {
-  #[napi(rename = "statusCode")]
+  #[napi(js_name = "statusCode")]
   pub status_code: i32,
   pub headers: Vec<(String, String)>,
   pub body: Buffer,
@@ -121,13 +121,12 @@ impl CronetClient {
     });
 
     match timeout_rx.recv_timeout(timeout_duration) {
-      Ok(Some(Ok(response))) => Ok(ResponseObject {
+      Ok(Ok(response)) => Ok(ResponseObject {
         status_code: response.status_code,
         headers: response.headers,
         body: Buffer::from(response.body),
       }),
-      Ok(Some(Err(err))) => Err(Error::from_reason(format!("Request failed: {}", err))),
-      Ok(None) => Err(Error::from_reason("Channel closed unexpectedly".to_string())),
+      Ok(Err(err)) => Err(Error::from_reason(format!("Request failed: {}", err))),
       Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(Error::from_reason(format!(
         "Request timeout after {}ms",
         timeout_ms
