@@ -13,7 +13,7 @@ pub struct CreateSessionOptions {
   #[napi(js_name = "skipCertVerify")]
   pub skip_cert_verify: Option<bool>,
   #[napi(js_name = "timeoutMs")]
-  pub timeout_ms: Option<u64>,
+  pub timeout_ms: Option<u32>,
   #[napi(js_name = "cipherSuites")]
   pub cipher_suites: Option<Vec<String>>,
   #[napi(js_name = "tlsCurves")]
@@ -28,7 +28,7 @@ pub struct RequestOptions {
   pub session_id: String,
   pub url: String,
   pub method: String,
-  pub headers: Option<Vec<(String, String)>>,
+  pub headers: Option<Vec<HeaderPair>>,
   pub body: Option<Buffer>,
   #[napi(js_name = "allowRedirects")]
   pub allow_redirects: Option<bool>,
@@ -38,13 +38,19 @@ pub struct RequestOptions {
 pub struct ResponseObject {
   #[napi(js_name = "statusCode")]
   pub status_code: i32,
-  pub headers: Vec<(String, String)>,
+  pub headers: Vec<HeaderPair>,
   pub body: Buffer,
 }
 
 #[napi]
 pub struct CronetClient {
   manager: Arc<SessionManager>,
+}
+
+#[napi(object)]
+pub struct HeaderPair {
+  pub name: String,
+  pub value: String,
 }
 
 #[napi]
@@ -62,7 +68,7 @@ impl CronetClient {
       SessionConfig {
         proxy_rules: opts.proxy_rules,
         skip_cert_verify: opts.skip_cert_verify.unwrap_or(false),
-        timeout_ms: opts.timeout_ms.unwrap_or(30000),
+        timeout_ms: opts.timeout_ms.unwrap_or(30000) as u64,
         cipher_suites: opts.cipher_suites,
         tls_curves: opts.tls_curves,
         tls_extensions: opts.tls_extensions,
@@ -97,7 +103,10 @@ impl CronetClient {
       method: options.method,
       headers: headers_vec
         .into_iter()
-        .map(|(name, value)| Header { name, value })
+        .map(|item| Header {
+          name: item.name,
+          value: item.value,
+        })
         .collect(),
       body: body_vec,
     };
@@ -121,11 +130,16 @@ impl CronetClient {
     });
 
     match timeout_rx.recv_timeout(timeout_duration) {
-      Ok(Ok(response)) => Ok(ResponseObject {
+      Ok(Ok(Ok(response))) => Ok(ResponseObject {
         status_code: response.status_code,
-        headers: response.headers,
+        headers: response
+          .headers
+          .into_iter()
+          .map(|(name, value)| HeaderPair { name, value })
+          .collect(),
         body: Buffer::from(response.body),
       }),
+      Ok(Ok(Err(err))) => Err(Error::from_reason(format!("Request failed: {}", err))),
       Ok(Err(err)) => Err(Error::from_reason(format!("Request failed: {}", err))),
       Err(std::sync::mpsc::RecvTimeoutError::Timeout) => Err(Error::from_reason(format!(
         "Request timeout after {}ms",
