@@ -23,6 +23,9 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install protoc
+        run: choco install protoc -y
+
       - name: Install N-API CLI
         run: npm install
         working-directory: cycronet-node-native
