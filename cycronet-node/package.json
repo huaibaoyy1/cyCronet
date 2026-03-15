@@ -1,0 +1,14 @@
+{
+  "name": "cycronet-node",
+  "version": "0.1.0",
+  "description": "Node.js client for Cronet-Cloak (Windows only)",
+  "main": "index.js",
+  "type": "commonjs",
+  "keywords": [
+    "cronet",
+    "cycronet",
+    "http",
+    "tls"
+  ],
+  "license": "MIT"
+}

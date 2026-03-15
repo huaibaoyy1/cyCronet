@@ -1,0 +1,21 @@
+[package]
+name = "cycronet-node-native"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "cronet_cloak"
+crate-type = ["cdylib"]
+
+[dependencies]
+napi = { version = "2", features = ["napi6"] }
+napi-derive = "2"
+tokio = { version = "1", features = ["full"] }
+cronet-cloak = { path = "../cycronet-build", default-features = false }
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1

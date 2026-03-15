@@ -1,0 +1,16 @@
+{
+  "name": "cycronet-node-native",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "build": "npx napi build --release"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.4"
+  },
+  "napi": {
+    "name": "cronet_cloak",
+    "binaryName": "cronet_cloak"
+  }
+}

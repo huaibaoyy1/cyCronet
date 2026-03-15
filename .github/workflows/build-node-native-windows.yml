@@ -1,0 +1,38 @@
+name: Build cycronet-node-native (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "cycronet-node-native/**"
+      - "cycronet-build/**"
+      - ".github/workflows/build-node-native-windows.yml"
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install N-API CLI
+        run: npm install
+        working-directory: cycronet-node-native
+
+      - name: Build native addon
+        run: npm run build
+        working-directory: cycronet-node-native
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cronet_cloak-node-win
+          path: cycronet-node-native/cronet_cloak.node
