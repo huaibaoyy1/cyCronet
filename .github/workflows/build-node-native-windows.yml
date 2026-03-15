@@ -26,6 +26,12 @@ jobs:
       - name: Install protoc
         run: choco install protoc -y
 
+      - name: Configure protoc path
+        shell: pwsh
+        run: |
+          Add-Content $env:GITHUB_ENV "PROTOC=C:\ProgramData\chocolatey\bin\protoc.exe"
+          Add-Content $env:GITHUB_ENV "PATH=C:\ProgramData\chocolatey\bin;$env:PATH"
+
       - name: Install N-API CLI
         run: npm install
         working-directory: cycronet-node-native
